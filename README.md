@@ -78,4 +78,4 @@ affectate
 The solver will then spit out a list of possible words sorted by points and alphabetically (when applicable)
 
 > Note that the accuracy of the solver depends heavily on which words are accepted by the game
-> as well as the words list on the system this is being run on
+> as well as the words list on the system this is being run on (see https://github.com/kavfixnel/words)
