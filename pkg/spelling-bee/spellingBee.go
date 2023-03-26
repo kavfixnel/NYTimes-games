@@ -14,19 +14,24 @@ const (
 )
 
 var (
-	newWordListOptions words.NewWordListOptions
+	// defaultRuneSanitizer is the default way the code will sanitizes runes
+	defaultRuneSanitizer = unicode.ToLower
 )
 
-func sanitizeRunes(runes map[rune]struct{}) map[rune]struct{} {
+// sanitizeRunes sanitizes a map of map[rune]struct{} by applying a sanitizer function that maps runes to runes
+// It returns the map of sanitized runes
+func sanitizeRunes(runes map[rune]struct{}, sanitizer func(rune) rune) map[rune]struct{} {
 	sanitizedRunes := make(map[rune]struct{}, len(runes))
 
 	for r := range runes {
-		sanitizedRunes[unicode.ToLower(r)] = struct{}{}
+		sanitizedRunes[sanitizer(r)] = struct{}{}
 	}
 
 	return sanitizedRunes
 }
 
+// wordToRunes takes a string word and converts it into a rune set
+// It return the run set of all the runes in the word
 func wordToRunes(word string) map[rune]struct{} {
 	wordRunes := make(map[rune]struct{}, len(word))
 	for _, r := range word {
@@ -46,9 +51,9 @@ func isValidWord(word string, requiredRunes, extraRunes map[rune]struct{}) bool 
 		return false
 	}
 
-	requiredRunes = sanitizeRunes(requiredRunes)
-	extraRunes = sanitizeRunes(extraRunes)
-	wordRunes := sanitizeRunes(wordToRunes(word))
+	requiredRunes = sanitizeRunes(requiredRunes, defaultRuneSanitizer)
+	extraRunes = sanitizeRunes(extraRunes, defaultRuneSanitizer)
+	wordRunes := sanitizeRunes(wordToRunes(word), defaultRuneSanitizer)
 
 	// Check that the word contains all required runes
 	for r := range requiredRunes {
@@ -128,7 +133,7 @@ func wordScore(word string, allRunes map[rune]struct{}) int {
 //
 // It returns a []string of
 func GetConstructableWordList(requiredRunes, extraRunes map[rune]struct{}) ([]string, error) {
-	wordList, err := words.NewWordList(&newWordListOptions)
+	wordList, err := words.NewWordList(nil)
 	if err != nil {
 		return []string{}, err
 	}
