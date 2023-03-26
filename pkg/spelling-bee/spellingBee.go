@@ -2,7 +2,7 @@ package spellingBee
 
 import (
 	"sort"
-	"strings"
+	"unicode"
 
 	"github.com/kavfixnel/words"
 )
@@ -17,26 +17,49 @@ var (
 	newWordListOptions words.NewWordListOptions
 )
 
+func sanitizeRunes(runes map[rune]struct{}) map[rune]struct{} {
+	sanitizedRunes := make(map[rune]struct{}, len(runes))
+
+	for r := range runes {
+		sanitizedRunes[unicode.ToLower(r)] = struct{}{}
+	}
+
+	return sanitizedRunes
+}
+
+func wordToRunes(word string) map[rune]struct{} {
+	wordRunes := make(map[rune]struct{}, len(word))
+	for _, r := range word {
+		wordRunes[r] = struct{}{}
+	}
+	return wordRunes
+}
+
 // isValidWord checks if a single word is valid based on the following parameters:
 //   - The word must contain all required runes from requiredRunes
 //   - The word must only contain runes from the superset of {requiredRunes..., extraRunes...}
 //
+// Note that with respect to runes, case does not matter. The function will take care of sanitization for you.
 // It returns the validness of the word.
 func isValidWord(word string, requiredRunes, extraRunes map[rune]struct{}) bool {
 	if len(word) < minWordLength {
 		return false
 	}
 
+	requiredRunes = sanitizeRunes(requiredRunes)
+	extraRunes = sanitizeRunes(extraRunes)
+	wordRunes := sanitizeRunes(wordToRunes(word))
+
 	// Check that the word contains all required runes
 	for r := range requiredRunes {
-		if !strings.ContainsRune(word, r) {
+		if _, ok := wordRunes[r]; !ok {
 			return false
 		}
 	}
 	// Check that word only contains valid runes
-	for _, wordRune := range word {
-		_, ok1 := requiredRunes[wordRune]
-		_, ok2 := extraRunes[wordRune]
+	for r := range wordRunes {
+		_, ok1 := requiredRunes[r]
+		_, ok2 := extraRunes[r]
 		if !(ok1 || ok2) {
 			return false
 		}
@@ -76,12 +99,13 @@ func wordScore(word string, allRunes map[rune]struct{}) int {
 		return 0
 	}
 
-	score := len(word) - 3
-
-	wordRunes := make(map[rune]struct{}, len(word))
-	for _, r := range word {
-		wordRunes[r] = struct{}{}
+	if len(word) == 4 {
+		return 1
 	}
+
+	score := len(word)
+
+	wordRunes := wordToRunes(word)
 	// Award an an extra 7 points if the word contains all runes in the
 	isPangram := true
 	for r := range allRunes {
